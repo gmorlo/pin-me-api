@@ -1,0 +1,33 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: pinme-postgres
+    environment:
+      POSTGRES_USER: pinme
+      POSTGRES_PASSWORD: pinme
+      POSTGRES_DB: pinme
+    ports:
+      # Host 5433 avoids clashes with a local Postgres already on 5432.
+      - "5433:5432"
+    volumes:
+      - pinme_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pinme -d pinme"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # S3-compatible bootstrap storage for local/dev.
+  # Prefer MinIO when the image is pullable on your machine; S3Mock is used here
+  # because minio/* pulls were denied in this environment.
+  s3:
+    image: adobe/s3mock:latest
+    container_name: pinme-s3
+    environment:
+      COM_ADOBE_TESTING_S3MOCK_DOMAIN_INITIALBUCKETS: pin-me
+      root.exists.retain: "true"
+    ports:
+      - "9090:9090"
+
+volumes:
+  pinme_pg_data:

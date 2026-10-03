@@ -2,7 +2,7 @@
 
 Backend for **PinMe** — a drawing-practice platform that helps artists work through their own reference boards with timed, non-repeating sessions and progress tracking.
 
-Companion frontend (planned): `pin-me-web`  
+Companion frontend: `pin-me-web`  
 Product docs hub (private/local): `pin-me`
 
 ---
@@ -25,10 +25,10 @@ This repository is the **REST API** that will own that logic, persistence, and (
 
 | Item | State |
 |------|--------|
-| Stage | **001 — API skeleton** |
+| Stage | **003 — Boards + upload** |
 | Production-ready? | No — early scaffolding |
-| Implemented | FastAPI app, `/health`, settings, SQLAlchemy + Alembic wiring, Docker Compose (Postgres 16 + S3-compatible mock), Pytest smoke |
-| Next | Boards CRUD, image upload (S3 API), practice session engine |
+| Implemented | FastAPI, `/health`, boards CRUD, LOCAL_UPLOAD via ImageSource + S3 mock, image content proxy, demo user, Pytest |
+| Next | Practice sessions (queue, Complete/Skip, summary, reset) |
 
 ---
 
@@ -121,7 +121,7 @@ pip install -r requirements-dev.txt
 alembic upgrade head
 ```
 
-Stage 001 ships an empty schema stub so Alembic is ready for domain tables next.
+Applies domain tables (users, boards, images, progress, `board_source_links`) and seeds a temporary **demo user** (`demo@pinme.local`) used until JWT auth lands.
 
 ### 6. Start the API
 
@@ -131,6 +131,17 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 - Health: [http://localhost:8000/health](http://localhost:8000/health)
 - OpenAPI docs: [http://localhost:8000/docs](http://localhost:8000/docs)
+- Boards: `GET/POST /boards`, images under `/boards/{id}/images`, content at `/images/{id}/content`
+
+### Upload limits (bootstrap LOCAL_UPLOAD)
+
+| Cap | Value |
+|-----|--------|
+| Max file size | 5 MB |
+| Content types | `image/jpeg`, `image/png`, `image/webp` |
+| Max images per board | 50 |
+
+Long-term binaries are meant to live on user Drive/Pinterest; S3/R2 is bootstrap only. Image handling goes through an `ImageSource` registry so remote adapters can be added without rewriting board/practice logic.
 
 ---
 
@@ -144,10 +155,11 @@ pytest
 
 - `GET /health` returns `{"status":"ok"}`
 - Root route exposes the health path
+- Boards CRUD + LOCAL_UPLOAD register/list/delete + content proxy (Pytest with in-memory DB + fake storage)
 
 **How this stage was verified**
 
-Local smoke: `docker compose up -d`, `alembic upgrade head`, `pytest` (2 passed), `GET /health` → `{"status":"ok"}`.
+`pytest` (5 passed). With Docker Desktop running: `docker compose up -d`, `alembic upgrade head`, then exercise boards/upload against live Postgres + S3 mock.
 
 ---
 
@@ -156,14 +168,18 @@ Local smoke: `docker compose up -d`, `alembic upgrade head`, `pytest` (2 passed)
 ```text
 pin-me-api/
 ├── app/
-│   ├── api/          # HTTP routers (health first)
-│   ├── core/         # settings
-│   ├── db/           # SQLAlchemy engine/session/base
-│   └── main.py       # FastAPI entrypoint
-├── alembic/          # migrations
+│   ├── api/           # HTTP routers
+│   ├── core/          # settings, constants
+│   ├── db/            # SQLAlchemy engine/session/base
+│   ├── models/        # ORM
+│   ├── repositories/  # persistence
+│   ├── schemas/       # Pydantic
+│   ├── services/      # domain (register_image, boards)
+│   ├── storage/       # ImageSource adapters + registry
+│   └── main.py
+├── alembic/
 ├── tests/
-├── docs/
-│   └── images/       # diagrams / screenshots (future)
+├── docs/images/       # diagrams / screenshots (future)
 ├── docker-compose.yml
 ├── Dockerfile
 ├── requirements.txt
@@ -177,12 +193,12 @@ pin-me-api/
 | Stage | Date | Summary |
 |-------|------|---------|
 | 001 | 2026-10-03 | API skeleton: FastAPI, Compose (Postgres + S3 mock), Alembic, health + Pytest |
+| 003 | 2026-10-03 | Boards CRUD + LOCAL_UPLOAD via ImageSource, demo user, content proxy |
 
 ---
 
 ## Roadmap (API)
 
-- Boards + bootstrap image upload via S3 API (local mock/MinIO → R2)
 - Practice sessions (queue-at-start, Complete / Skip, reset with history)
 - Auth (JWT) and resume unfinished sessions
 - Activity heatmap stats endpoint

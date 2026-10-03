@@ -147,7 +147,7 @@ pytest
 
 **How this stage was verified**
 
-See [docs/stages/001-api-skeleton.md](docs/stages/001-api-skeleton.md) for environment, commands, and results.
+Local smoke: `docker compose up -d`, `alembic upgrade head`, `pytest` (2 passed), `GET /health` → `{"status":"ok"}`.
 
 ---
 
@@ -163,7 +163,6 @@ pin-me-api/
 ├── alembic/          # migrations
 ├── tests/
 ├── docs/
-│   ├── stages/       # public stage notes (portfolio changelog)
 │   └── images/       # diagrams / screenshots (future)
 ├── docker-compose.yml
 ├── Dockerfile
@@ -175,9 +174,9 @@ pin-me-api/
 
 ## Stages / changelog
 
-| Stage | Date | Summary | Notes |
-|-------|------|---------|-------|
-| 001 | 2026-10-03 | API skeleton: FastAPI, Compose (Postgres + MinIO), Alembic, health + Pytest | [docs/stages/001-api-skeleton.md](docs/stages/001-api-skeleton.md) |
+| Stage | Date | Summary |
+|-------|------|---------|
+| 001 | 2026-10-03 | API skeleton: FastAPI, Compose (Postgres + S3 mock), Alembic, health + Pytest |
 
 ---
 
@@ -195,7 +194,7 @@ pin-me-api/
 
 | Repo | Role |
 |------|------|
-| `pin-me-web` | Next.js UI (coming next) |
+| `pin-me-web` | Next.js UI (Stage 002 skeleton) |
 | `pin-me` | Private/local product docs hub (not the public portfolio face) |
 
 ---

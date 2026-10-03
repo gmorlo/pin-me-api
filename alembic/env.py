@@ -5,9 +5,7 @@ from sqlalchemy import engine_from_config, pool
 
 from app.core.config import get_settings
 from app.db.base import Base
-
-# Import models here when they exist so Alembic can detect metadata.
-# from app.models import ...  # noqa: F401
+from app.models import Board, BoardSourceLink, PracticeProgress, ReferenceImage, User  # noqa: F401
 
 config = context.config
 

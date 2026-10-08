@@ -10,8 +10,10 @@ from app.deps import get_demo_user
 from app.models.user import User
 from app.schemas.board import BoardCreate, BoardRead, BoardUpdate
 from app.schemas.image import ImageRead
+from app.schemas.practice import ResetProgressResult
 from app.services import boards as board_service
 from app.services import images as image_service
+from app.services import practice as practice_service
 
 router = APIRouter(prefix="/boards", tags=["boards"])
 
@@ -88,3 +90,12 @@ def delete_board_image(
     user: User = Depends(get_demo_user),
 ) -> None:
     image_service.delete_image(db, user.id, board_id, image_id)
+
+
+@router.post("/{board_id}/reset-progress", response_model=ResetProgressResult)
+def reset_board_progress(
+    board_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_demo_user),
+) -> ResetProgressResult:
+    return practice_service.reset_board_progress(db, user.id, board_id)

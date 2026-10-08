@@ -71,67 +71,121 @@ Place future architecture diagrams and demo screenshots in [`docs/images/`](docs
 ### Prerequisites
 
 - Python 3.12+ (3.13 works for local dev)
-- Docker Desktop (or compatible Docker Engine)
+- **Docker Desktop** (must be running — not only installed)
 - Git
+- Companion UI: `pin-me-web` (optional for API-only work)
 
-### 1. Clone and enter the repo
+### Local run — command by command (Windows)
 
-```bash
-cd pin-me-api
+Use **three terminals** if you also want the web UI. Keep this API terminal open while developing.
+
+#### 0) Start Docker Desktop
+
+1. Open the **Docker Desktop** app from the Start menu.
+2. Wait until it says the engine is running (whale icon idle / “Engine running”).
+3. If `docker compose` later fails with `dockerDesktopLinuxEngine` / pipe not found → Docker is still not ready; wait or restart Docker Desktop.
+
+#### 1) Open this project folder
+
+Run every command below from the `pin-me-api` root (the folder that contains `docker-compose.yml` and `app/`).
+
+#### 2) Env file (once)
+
+**cmd**
+
+```bat
+copy .env.example .env
 ```
 
-### 2. Environment file
+**PowerShell**
 
-```bash
-cp .env.example .env
+```powershell
+Copy-Item .env.example .env
 ```
 
-Defaults match `docker-compose.yml` (Postgres + MinIO on localhost).
+Defaults match Compose: Postgres on `localhost:5433`, S3 mock on `localhost:9090`.
 
-### 3. Start infrastructure
+#### 3) Start Postgres + S3 mock
 
-```bash
+```bat
 docker compose up -d
 ```
 
-Services:
+Check:
 
-- Postgres → `localhost:5433` (user/password/db: `pinme`) — host port **5433** avoids clashes with a local Postgres on 5432
-- S3 mock → `localhost:9090` with initial bucket `pin-me`
+```bat
+docker compose ps
+```
 
-> Note: MinIO images could not be pulled in the original Stage 001 environment (`minio/*` registry denied). Compose therefore uses `adobe/s3mock` so the S3 API path stays valid. You can swap back to MinIO later if your Docker registry allows it.
+You should see `pinme-postgres` (healthy) and `pinme-s3` (up).
 
-### 4. Python virtualenv and dependencies
+| Service | Host |
+|---------|------|
+| Postgres | `localhost:5433` (user/password/db: `pinme`) |
+| S3 mock | `localhost:9090` (bucket `pin-me` is created on first upload if missing) |
 
-```bash
+> Compose uses `adobe/s3mock` (S3-compatible). MinIO can replace it later if your registry allows those images.
+
+#### 4) Python venv + dependencies (once, or after requirements change)
+
+**cmd**
+
+```bat
 python -m venv .venv
-
-# Windows PowerShell
-.\.venv\Scripts\Activate.ps1
-
-# macOS / Linux
-# source .venv/bin/activate
-
+.\.venv\Scripts\activate.bat
+python -m pip install --upgrade pip
 pip install -r requirements-dev.txt
 ```
 
-### 5. Run migrations
+**PowerShell**
 
-```bash
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+pip install -r requirements-dev.txt
+```
+
+Tip: in **cmd** use `activate.bat`. `Activate.ps1` only works in PowerShell. If activation is awkward, call tools with full path (see below).
+
+#### 5) Database migrations
+
+With venv active:
+
+```bat
 alembic upgrade head
 ```
 
-Applies domain tables (users, boards, images, progress, `board_source_links`) and seeds a temporary **demo user** (`demo@pinme.local`) used until JWT auth lands.
+Or without activating:
 
-### 6. Start the API
-
-```bash
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```bat
+.\.venv\Scripts\alembic.exe upgrade head
 ```
 
-- Health: [http://localhost:8000/health](http://localhost:8000/health)
-- OpenAPI docs: [http://localhost:8000/docs](http://localhost:8000/docs)
-- Boards: `GET/POST /boards`, images under `/boards/{id}/images`, content at `/images/{id}/content`
+This creates tables and seeds the temporary **demo user** (`demo@pinme.local`) used until JWT auth exists.
+
+#### 6) Start the API (leave this running)
+
+```bat
+.\.venv\Scripts\uvicorn.exe app.main:app --reload --host 127.0.0.1 --port 8000
+```
+
+Or with venv active:
+
+```bat
+uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+```
+
+Check in a browser:
+
+- Health: [http://127.0.0.1:8000/health](http://127.0.0.1:8000/health) → `{"status":"ok"}`
+- OpenAPI: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
+
+Boards/images: `GET/POST /boards`, `/boards/{id}/images`, content at `/images/{id}/content`.
+
+#### 7) (Optional) Start the web UI
+
+In a **second** terminal, follow `pin-me-web` README → open [http://localhost:3000](http://localhost:3000).
 
 ### Upload limits (bootstrap LOCAL_UPLOAD)
 
@@ -142,6 +196,15 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 | Max images per board | 50 |
 
 Long-term binaries are meant to live on user Drive/Pinterest; S3/R2 is bootstrap only. Image handling goes through an `ImageSource` registry so remote adapters can be added without rewriting board/practice logic.
+
+### Quick troubleshooting
+
+| Symptom | Fix |
+|---------|-----|
+| `dockerDesktopLinuxEngine` / pipe error | Start/restart **Docker Desktop**, wait for engine, retry `docker compose up -d` |
+| `'alembic' is not recognized` | Use `.\.venv\Scripts\alembic.exe` or run `activate.bat` first |
+| Upload `NoSuchBucket` / 503 storage | Ensure `pinme-s3` is up (`docker compose ps`); restart API after Compose is healthy |
+| Port 5433 / 8000 busy | Stop the other process, or change the port in `.env` / uvicorn flag |
 
 ---
 
@@ -194,12 +257,12 @@ pin-me-api/
 |-------|------|---------|
 | 001 | 2026-10-03 | API skeleton: FastAPI, Compose (Postgres + S3 mock), Alembic, health + Pytest |
 | 003 | 2026-10-03 | Boards CRUD + LOCAL_UPLOAD via ImageSource, demo user, content proxy |
+| 004 | 2026-10-08 | Practice sessions: queue-at-start, Complete/Skip, pause, reset + completion events |
 
 ---
 
 ## Roadmap (API)
 
-- Practice sessions (queue-at-start, Complete / Skip, reset with history)
 - Auth (JWT) and resume unfinished sessions
 - Activity heatmap stats endpoint
 - Later: Google Drive / Pinterest as user-owned media sources

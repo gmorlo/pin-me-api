@@ -1,22 +1,56 @@
 from __future__ import annotations
 
 import uuid
+from collections import defaultdict
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.models.image import ReferenceImage
 from app.models.progress import PracticeProgress, ProgressStatus
 
 
-def list_images(db: Session, board_id: uuid.UUID) -> list[ReferenceImage]:
-    return list(
-        db.scalars(
-            select(ReferenceImage)
-            .where(ReferenceImage.board_id == board_id)
-            .order_by(ReferenceImage.created_at.desc())
-        ).all()
+def list_images(
+    db: Session,
+    board_id: uuid.UUID,
+    *,
+    limit: int | None = None,
+    offset: int = 0,
+) -> list[ReferenceImage]:
+    stmt = (
+        select(ReferenceImage)
+        .where(ReferenceImage.board_id == board_id)
+        .order_by(ReferenceImage.created_at.desc())
+        .offset(offset)
     )
+    if limit is not None:
+        stmt = stmt.limit(limit)
+    return list(db.scalars(stmt).all())
+
+
+def count_images(db: Session, board_id: uuid.UUID) -> int:
+    return int(
+        db.scalar(
+            select(func.count())
+            .select_from(ReferenceImage)
+            .where(ReferenceImage.board_id == board_id)
+        )
+        or 0
+    )
+
+
+def list_images_for_boards(
+    db: Session, board_ids: list[uuid.UUID]
+) -> dict[uuid.UUID, list[ReferenceImage]]:
+    if not board_ids:
+        return {}
+    rows = db.scalars(
+        select(ReferenceImage).where(ReferenceImage.board_id.in_(board_ids))
+    ).all()
+    grouped: dict[uuid.UUID, list[ReferenceImage]] = defaultdict(list)
+    for image in rows:
+        grouped[image.board_id].append(image)
+    return grouped
 
 
 def get_image(db: Session, image_id: uuid.UUID) -> ReferenceImage | None:

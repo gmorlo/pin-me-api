@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
-from app.deps import get_demo_user
+from app.deps import get_current_user
 from app.models.user import User
 from app.schemas.practice import ActionBody, SessionCreate, SessionRead
 from app.services import practice as practice_service
@@ -18,7 +18,7 @@ router = APIRouter(prefix="/practice", tags=["practice"])
 def create_session(
     payload: SessionCreate,
     db: Session = Depends(get_db),
-    user: User = Depends(get_demo_user),
+    user: User = Depends(get_current_user),
 ) -> SessionRead:
     return practice_service.create_session(db, user.id, payload)
 
@@ -27,7 +27,7 @@ def create_session(
 def get_session(
     session_id: uuid.UUID,
     db: Session = Depends(get_db),
-    user: User = Depends(get_demo_user),
+    user: User = Depends(get_current_user),
 ) -> SessionRead:
     return practice_service.get_session(db, user.id, session_id)
 
@@ -36,7 +36,7 @@ def get_session(
 def pause_session(
     session_id: uuid.UUID,
     db: Session = Depends(get_db),
-    user: User = Depends(get_demo_user),
+    user: User = Depends(get_current_user),
 ) -> SessionRead:
     return practice_service.pause_session(db, user.id, session_id)
 
@@ -45,7 +45,7 @@ def pause_session(
 def resume_session(
     session_id: uuid.UUID,
     db: Session = Depends(get_db),
-    user: User = Depends(get_demo_user),
+    user: User = Depends(get_current_user),
 ) -> SessionRead:
     return practice_service.resume_session(db, user.id, session_id)
 
@@ -55,7 +55,7 @@ def complete_session_image(
     session_id: uuid.UUID,
     body: ActionBody | None = None,
     db: Session = Depends(get_db),
-    user: User = Depends(get_demo_user),
+    user: User = Depends(get_current_user),
 ) -> SessionRead:
     return practice_service.complete_current(
         db, user.id, session_id, body or ActionBody()
@@ -67,7 +67,7 @@ def skip_session_image(
     session_id: uuid.UUID,
     body: ActionBody | None = None,
     db: Session = Depends(get_db),
-    user: User = Depends(get_demo_user),
+    user: User = Depends(get_current_user),
 ) -> SessionRead:
     return practice_service.skip_current(
         db, user.id, session_id, body or ActionBody()
@@ -78,6 +78,6 @@ def skip_session_image(
 def finish_session(
     session_id: uuid.UUID,
     db: Session = Depends(get_db),
-    user: User = Depends(get_demo_user),
+    user: User = Depends(get_current_user),
 ) -> SessionRead:
     return practice_service.finish_session(db, user.id, session_id)

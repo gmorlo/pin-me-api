@@ -20,14 +20,18 @@ services:
   # S3-compatible bootstrap storage for local/dev.
   # Prefer MinIO when the image is pullable on your machine; S3Mock is used here
   # because minio/* pulls were denied in this environment.
+  # Volume keeps objects across container restarts (Postgres already persisted).
   s3:
     image: adobe/s3mock:latest
     container_name: pinme-s3
     environment:
       COM_ADOBE_TESTING_S3MOCK_DOMAIN_INITIALBUCKETS: pin-me
-      root.exists.retain: "true"
+      retainFilesOnExit: "true"
     ports:
       - "9090:9090"
+    volumes:
+      - pinme_s3_data:/tmp/s3mock
 
 volumes:
   pinme_pg_data:
+  pinme_s3_data:

@@ -1,6 +1,6 @@
 import uuid
 
-# Temporary Stage 003 identity — replaced by JWT auth in V1.1.
+# Seeded allowlisted identity (Alembic 0002). Prefer Google login or AUTH_DEV_BYPASS.
 DEMO_USER_ID = uuid.UUID("00000000-0000-4000-8000-000000000001")
 DEMO_USER_EMAIL = "demo@pinme.local"
 DEMO_USER_USERNAME = "demo"

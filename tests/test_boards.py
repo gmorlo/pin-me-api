@@ -14,6 +14,7 @@ def test_create_and_list_boards(client) -> None:
     assert listed.status_code == 200
     assert len(listed.json()) == 1
     assert listed.json()[0]["id"] == body["id"]
+    assert listed.json()[0]["preview_images"] == []
 
 
 def test_upload_list_and_delete_image(client, fake_storage) -> None:
@@ -35,7 +36,14 @@ def test_upload_list_and_delete_image(client, fake_storage) -> None:
 
     listed = client.get(f"/boards/{board_id}/images")
     assert listed.status_code == 200
-    assert len(listed.json()) == 1
+    page = listed.json()
+    assert page["total"] == 1
+    assert len(page["items"]) == 1
+    assert page["items"][0]["id"] == image["id"]
+
+    board_read = client.get(f"/boards/{board_id}").json()
+    assert len(board_read["preview_images"]) == 1
+    assert board_read["preview_images"][0]["id"] == image["id"]
 
     content = client.get(image["content_path"])
     assert content.status_code == 200
@@ -44,7 +52,9 @@ def test_upload_list_and_delete_image(client, fake_storage) -> None:
 
     deleted = client.delete(f"/boards/{board_id}/images/{image['id']}")
     assert deleted.status_code == 204
-    assert client.get(f"/boards/{board_id}/images").json() == []
+    empty = client.get(f"/boards/{board_id}/images").json()
+    assert empty["items"] == []
+    assert empty["total"] == 0
     assert fake_storage.objects == {}
 
 

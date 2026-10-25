@@ -13,9 +13,12 @@ from app.core.constants import (
 from app.models.image import SourceType
 from app.repositories import boards as board_repo
 from app.repositories import images as image_repo
-from app.schemas.image import ImageRead
+from app.schemas.image import ImagePage, ImageRead
 from app.storage import get_source
 from app.storage.base import ResolvedContent
+
+DEFAULT_IMAGE_PAGE_SIZE = 24
+MAX_IMAGE_PAGE_SIZE = 50
 
 
 def _to_read(image) -> ImageRead:
@@ -71,11 +74,27 @@ def register_image(
     return _to_read(image)
 
 
-def list_images(db: Session, user_id: uuid.UUID, board_id: uuid.UUID) -> list[ImageRead]:
+def list_images(
+    db: Session,
+    user_id: uuid.UUID,
+    board_id: uuid.UUID,
+    *,
+    limit: int = DEFAULT_IMAGE_PAGE_SIZE,
+    offset: int = 0,
+) -> ImagePage:
     board = board_repo.get_board(db, board_id, user_id)
     if board is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Board not found")
-    return [_to_read(image) for image in image_repo.list_images(db, board.id)]
+    page_size = max(1, min(limit, MAX_IMAGE_PAGE_SIZE))
+    page_offset = max(0, offset)
+    total = image_repo.count_images(db, board.id)
+    items = [
+        _to_read(image)
+        for image in image_repo.list_images(
+            db, board.id, limit=page_size, offset=page_offset
+        )
+    ]
+    return ImagePage(items=items, total=total, limit=page_size, offset=page_offset)
 
 
 async def upload_image(

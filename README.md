@@ -124,7 +124,7 @@ You should see `pinme-postgres` (healthy) and `pinme-s3` (up).
 | Postgres | `localhost:5433` (user/password/db: `pinme`) |
 | S3 mock | `localhost:9090` (bucket `pin-me` is created on first upload if missing) |
 
-> Compose uses `adobe/s3mock` (S3-compatible). MinIO can replace it later if your registry allows those images.
+> Compose uses `adobe/s3mock` (S3-compatible). Object bytes persist in Docker volume `pinme_s3_data` (same idea as Postgres) so a container restart does not orphan DB image rows. If thumbnails 404 after an old wipe, re-upload images once. MinIO can replace S3Mock later if your registry allows those images.
 
 #### 4) Python venv + dependencies (once, or after requirements change)
 
@@ -204,6 +204,7 @@ Long-term binaries are meant to live on user Drive/Pinterest; S3/R2 is bootstrap
 | `dockerDesktopLinuxEngine` / pipe error | Start/restart **Docker Desktop**, wait for engine, retry `docker compose up -d` |
 | `'alembic' is not recognized` | Use `.\.venv\Scripts\alembic.exe` or run `activate.bat` first |
 | Upload `NoSuchBucket` / 503 storage | Ensure `pinme-s3` is up (`docker compose ps`); restart API after Compose is healthy |
+| Thumbnails `/images/.../content` 404 | Object missing in S3 (pre-volume wipe). Re-upload images, or `docker compose up -d` after pulling compose with `pinme_s3_data` |
 | Port 5433 / 8000 busy | Stop the other process, or change the port in `.env` / uvicorn flag |
 
 ---
@@ -258,12 +259,13 @@ pin-me-api/
 | 001 | 2026-10-03 | API skeleton: FastAPI, Compose (Postgres + S3 mock), Alembic, health + Pytest |
 | 003 | 2026-10-03 | Boards CRUD + LOCAL_UPLOAD via ImageSource, demo user, content proxy |
 | 004 | 2026-10-08 | Practice sessions: queue-at-start, Complete/Skip, pause, reset + completion events |
+| 007 | 2026-10-25 | Google OAuth + allowlist JWT cookie; local `AUTH_DEV_BYPASS` login |
 
 ---
 
 ## Roadmap (API)
 
-- Auth (JWT) and resume unfinished sessions
+- Resume unfinished sessions
 - Activity heatmap stats endpoint
 - Later: Google Drive / Pinterest as user-owned media sources
 

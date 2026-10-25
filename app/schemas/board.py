@@ -16,6 +16,11 @@ class BoardUpdate(BaseModel):
     description: str | None = Field(default=None, max_length=2000)
 
 
+class BoardPreviewImage(BaseModel):
+    id: uuid.UUID
+    content_path: str
+
+
 class BoardRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -24,3 +29,4 @@ class BoardRead(BaseModel):
     description: str | None
     created_at: datetime
     image_count: int = 0
+    preview_images: list[BoardPreviewImage] = Field(default_factory=list)

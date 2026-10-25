@@ -8,7 +8,9 @@ from sqlalchemy import create_engine, event
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from app.core.config import get_settings
 from app.core.constants import DEMO_USER_ID
+from app.core.security import create_access_token
 from app.db.base import Base
 from app.db.session import get_db
 from app.main import app
@@ -98,13 +100,27 @@ def db_session() -> Generator[Session, None, None]:
 
 
 @pytest.fixture()
+def auth_headers() -> dict[str, str]:
+    settings = get_settings()
+    token = create_access_token(
+        user_id=DEMO_USER_ID,
+        email="demo@pinme.local",
+        settings=settings,
+    )
+    return {"Authorization": f"Bearer {token}"}
+
+
+@pytest.fixture()
 def client(
-    db_session: Session, fake_storage: FakeLocalUploadSource
+    db_session: Session,
+    fake_storage: FakeLocalUploadSource,
+    auth_headers: dict[str, str],
 ) -> Generator[TestClient, None, None]:
     def _override_db() -> Generator[Session, None, None]:
         yield db_session
 
     app.dependency_overrides[get_db] = _override_db
     with TestClient(app) as test_client:
+        test_client.headers.update(auth_headers)
         yield test_client
     app.dependency_overrides.clear()

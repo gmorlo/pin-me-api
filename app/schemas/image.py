@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class ImageRead(BaseModel):
@@ -20,3 +20,10 @@ class ImageRead(BaseModel):
     original_filename: str | None
     created_at: datetime
     content_path: str
+
+
+class ImagePage(BaseModel):
+    items: list[ImageRead]
+    total: int
+    limit: int
+    offset: int = Field(ge=0)

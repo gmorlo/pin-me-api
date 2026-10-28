@@ -1,0 +1,5 @@
+# Vercel CLI ignores .gitignore: never upload secrets or local envs.
+.env*
+!.env.example
+.venv/
+venv/

@@ -1,6 +1,10 @@
 from __future__ import annotations
 
+import os
 from collections.abc import Generator
+
+# Settings default to production; tests must run on a fresh clone without .env.
+os.environ.setdefault("APP_ENV", "test")
 
 import pytest
 from fastapi.testclient import TestClient

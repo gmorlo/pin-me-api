@@ -1,6 +1,11 @@
 from __future__ import annotations
 
+import uuid
 from io import BytesIO
+
+from app.core.config import get_settings
+from app.core.security import create_access_token
+from app.models.user import User
 
 
 def test_create_and_list_boards(client) -> None:
@@ -17,7 +22,7 @@ def test_create_and_list_boards(client) -> None:
     assert listed.json()[0]["preview_images"] == []
 
 
-def test_upload_list_and_delete_image(client, fake_storage) -> None:
+def test_upload_list_and_delete_image(client, fake_storage, db_session) -> None:
     board = client.post("/boards", json={"name": "Environments"}).json()
     board_id = board["id"]
 
@@ -49,6 +54,20 @@ def test_upload_list_and_delete_image(client, fake_storage) -> None:
     assert content.status_code == 200
     assert content.content == png_bytes
     assert content.headers["content-type"].startswith("image/png")
+
+    anonymous = client.get(image["content_path"], headers={"Authorization": ""})
+    assert anonymous.status_code == 401
+
+    other = User(id=uuid.uuid4(), email="other@pinme.local", username="other")
+    db_session.add(other)
+    db_session.commit()
+    other_token = create_access_token(
+        user_id=other.id, email=other.email, settings=get_settings()
+    )
+    foreign = client.get(
+        image["content_path"], headers={"Authorization": f"Bearer {other_token}"}
+    )
+    assert foreign.status_code == 404
 
     deleted = client.delete(f"/boards/{board_id}/images/{image['id']}")
     assert deleted.status_code == 204

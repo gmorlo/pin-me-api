@@ -160,9 +160,11 @@ def delete_image(
     image_repo.delete_image(db, image)
 
 
-def resolve_image_content(db: Session, image_id: uuid.UUID) -> ResolvedContent:
+def resolve_image_content(
+    db: Session, image_id: uuid.UUID, user_id: uuid.UUID
+) -> ResolvedContent:
     image = image_repo.get_image(db, image_id)
-    if image is None:
+    if image is None or image.board.user_id != user_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Image not found")
     source = get_source(image.source_type)
     return source.resolve(image)

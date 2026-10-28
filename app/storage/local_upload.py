@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import uuid
 
 import boto3
@@ -11,6 +12,8 @@ from app.core.config import Settings
 from app.models.image import ReferenceImage, SourceType
 from app.storage.base import ResolvedContent
 
+logger = logging.getLogger(__name__)
+
 
 class LocalUploadSource:
     """S3-compatible bootstrap storage for LOCAL_UPLOAD images."""
@@ -20,6 +23,7 @@ class LocalUploadSource:
     def __init__(self, settings: Settings) -> None:
         self._bucket = settings.s3_bucket
         self._region = settings.s3_region
+        self._is_local = settings.is_local
         self._client = boto3.client(
             "s3",
             endpoint_url=settings.s3_endpoint_url,
@@ -32,6 +36,9 @@ class LocalUploadSource:
 
     def _ensure_bucket(self) -> None:
         """Create the bootstrap bucket if S3Mock/MinIO started without it."""
+        # Prod (R2) tokens are object-scoped: head/create_bucket would 403.
+        if not self._is_local:
+            return
         try:
             self._client.head_bucket(Bucket=self._bucket)
             return
@@ -82,9 +89,10 @@ class LocalUploadSource:
                 ContentType=content_type,
             )
         except ClientError as exc:
+            logger.exception("Failed to store upload in bucket '%s'", self._bucket)
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail=f"Failed to store upload in bucket '{self._bucket}': {exc}",
+                detail="Storage unavailable",
             ) from exc
         return key
 

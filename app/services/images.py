@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from app.core.constants import (
     ALLOWED_IMAGE_CONTENT_TYPES,
     MAX_IMAGES_PER_BOARD,
+    MAX_IMAGES_PER_USER,
     MAX_UPLOAD_BYTES,
 )
 from app.models.image import SourceType
@@ -58,6 +59,11 @@ def register_image(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Board already has the maximum of {MAX_IMAGES_PER_BOARD} images",
+        )
+    if board_repo.count_user_images(db, user_id) >= MAX_IMAGES_PER_USER:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Account already has the maximum of {MAX_IMAGES_PER_USER} images",
         )
     image = image_repo.create_image(
         db,

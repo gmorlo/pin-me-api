@@ -82,3 +82,21 @@ def test_reject_unsupported_content_type(client) -> None:
     files = {"file": ("notes.txt", BytesIO(b"hello"), "text/plain")}
     response = client.post(f"/boards/{board_id}/images", files=files)
     assert response.status_code == 400
+
+
+def test_user_image_limit_spans_boards(client, fake_storage, monkeypatch) -> None:
+    monkeypatch.setattr("app.services.images.MAX_IMAGES_PER_USER", 1)
+    png = b"\x89PNG\r\n\x1a\n" + b"\x00" * 16
+    first = client.post("/boards", json={"name": "A"}).json()["id"]
+    second = client.post("/boards", json={"name": "B"}).json()["id"]
+
+    ok = client.post(
+        f"/boards/{first}/images", files={"file": ("a.png", BytesIO(png), "image/png")}
+    )
+    assert ok.status_code == 201, ok.text
+    over = client.post(
+        f"/boards/{second}/images", files={"file": ("b.png", BytesIO(png), "image/png")}
+    )
+    assert over.status_code == 400
+    assert "maximum" in over.json()["detail"]
+    assert len(fake_storage.objects) == 1

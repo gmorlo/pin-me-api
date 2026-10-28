@@ -27,6 +27,18 @@ def get_board(db: Session, board_id: uuid.UUID, user_id: uuid.UUID) -> Board | N
     )
 
 
+def count_user_images(db: Session, user_id: uuid.UUID) -> int:
+    return int(
+        db.scalar(
+            select(func.count())
+            .select_from(ReferenceImage)
+            .join(Board, ReferenceImage.board_id == Board.id)
+            .where(Board.user_id == user_id)
+        )
+        or 0
+    )
+
+
 def count_images(db: Session, board_id: uuid.UUID) -> int:
     return int(
         db.scalar(

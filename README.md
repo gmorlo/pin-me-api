@@ -260,6 +260,7 @@ pin-me-api/
 | 003 | 2026-10-03 | Boards CRUD + LOCAL_UPLOAD via ImageSource, demo user, content proxy |
 | 004 | 2026-10-08 | Practice sessions: queue-at-start, Complete/Skip, pause, reset + completion events |
 | 007 | 2026-10-25 | Google OAuth + allowlist JWT cookie; local `AUTH_DEV_BYPASS` login |
+| 008 | 2026-10-28 | Prod on Railway + Neon + R2: unsafe-config guard, owner-only image content, upload caps |
 
 ---
 

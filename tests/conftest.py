@@ -4,7 +4,7 @@ import os
 from collections.abc import Generator
 
 # Settings default to production; tests must run on a fresh clone without .env.
-os.environ.setdefault("APP_ENV", "test")
+os.environ.setdefault("APP_ENV", "local")
 
 import pytest
 from fastapi.testclient import TestClient

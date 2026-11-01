@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 from app.core.config import Settings, get_settings
 from app.core.constants import DEMO_USER_ID
 from app.core.security import create_access_token
@@ -74,3 +76,9 @@ def test_issue_token_roundtrip() -> None:
     )
     assert isinstance(token, str) and len(token) > 20
 
+
+
+@pytest.mark.parametrize("app_env", ["dev", "development", "test", "staging"])
+def test_only_local_may_enable_dev_bypass(app_env) -> None:
+    with pytest.raises(ValueError, match="AUTH_DEV_BYPASS"):
+        Settings(app_env=app_env, jwt_secret="x" * 32, auth_dev_bypass=True, _env_file=None)

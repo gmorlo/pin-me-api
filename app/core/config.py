@@ -78,7 +78,7 @@ class Settings(BaseSettings):
 
     @property
     def is_local(self) -> bool:
-        return self.app_env.lower() in {"local", "test", "development", "dev"}
+        return self.app_env.lower() == "local"
 
 
 @lru_cache

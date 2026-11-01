@@ -55,6 +55,7 @@ def register_image(
     board = board_repo.get_board(db, board_id, user_id)
     if board is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Board not found")
+    # shortcut: caps are race-free only because this runs without await on one worker; add per-user locking off the event loop before scaling to more workers or replicas.
     if board_repo.count_images(db, board.id) >= MAX_IMAGES_PER_BOARD:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

@@ -1,6 +1,9 @@
 # PinMe API
 
 [![CI](https://github.com/gmorlo/pin-me-api/actions/workflows/ci.yml/badge.svg)](https://github.com/gmorlo/pin-me-api/actions/workflows/ci.yml)
+[![License: proprietary](https://img.shields.io/badge/License-proprietary-lightgrey.svg)](LICENSE)
+![Python 3.12](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)
 
 Backend for **PinMe**, a drawing-practice app: artists keep reference boards and run timed, non-repeating practice sessions from their own images.
 
@@ -110,4 +113,4 @@ tests/             Pytest suite
 
 ## License
 
-Personal portfolio project. License to be decided.
+Copyright (c) 2026 Gabriel Francke. All rights reserved. The code is public for portfolio review only; see [LICENSE](LICENSE).
